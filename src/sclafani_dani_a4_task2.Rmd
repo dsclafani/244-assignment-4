@@ -14,6 +14,8 @@ library(tidyverse)
 library(here)
 library(janitor)
 library(lubridate)
+library(broom)
+library(gt)
 ```
 
 ### Reading in the Data
@@ -30,32 +32,119 @@ fish <- fish_data %>%
   mutate(total_production = as.numeric(total_production)) %>% 
   mutate(wild_catch = as.numeric(wild_catch)) %>% 
  mutate(farmed_fish = as.numeric(farmed_fish))
+```
 
+
+### Setting up for Nonlinear least squares, need to add a column for time that makes 1950 = 0, and every year after that equal the corresponding number
+```{r}
+#creating a vector for the numbers 0-62
+vec_1 <- 0:62
+
+#making this vector a dataframe
+df_vec <- vec_1 %>% as.data.frame()
+
+#adding this vector as a column to the fish data frame
+fish["time"] <- df_vec
 
 ```
 
-### Data Visualization - Fish Over time
-
-```{r, fig.cap="Figure 1.0: The Amount of Wild Fish Caught between 1950-2012"}
-ggplot(data = fish, aes(x = year, y = wild_catch)) + geom_line(color = "blue") +
+### Data Visualization, Wild Fish Caught over time
+```{r, fig.cap = "**Figure 1.0:** Wild Fish Caught over time from the year 1950 through 2012 globally"}
+ggplot(data = fish, aes(x = time, y = wild_catch)) + geom_line(color = "blue") +
   theme_minimal() +
-  labs(x = "Year", y = "Number of Wild Fish Caught (million of tons)", title = "Wild Fish Caught Over Time (1950-2012)")+
+  labs(x = "Time (year)", y = "Number of Wild Fish Caught (million of tons)", title = "Wild Fish Caught Over Time (1950-2012)")+
   theme(plot.title = element_text(hjust = 0.5))
 ```
-### need to work on this
-Part 2.b: In text below the exploratory graph: What type of relationship describes the trend? What does that look like mathematically (include an equation, possibly using LaTeX)? What are your initial estimates for the parameters in the model? 
 
-The graph above showing the amount of wild fish over time appears to follow a logistic trend, finding an asymptote around 89 million tons of wild fish. Using the graph to estimate parameters, the starting number of wild fish caught appears to be at around   18 million tons of fish.
+The curve of wild fish caught over time appears to follow a logistic growth model, and can be described by the following function: $P(t)=\frac{K}{1+Ae^{-kt}}$. The parameters can be defined as, $K$ the carrying capacity, $A$ is the ratio $\frac{K-P_0}{P_0}$, and $k$ is the growth rate constant. The parameters $K$ and $A$ can be estimated as 89 million tons of wild fish and 3.94 million tons of wild fish using Figure 1.0. The growth rate constant, $k$ must be estimated using an exponential expression which is shown in the code below. $k$ is estimated to be 0.04.
 
-### to do Nonlinear least squares, need to add a column that makes 1950 = 1, and every year after that equal the corresponding number
+```{r, fig.cap="**Figure 2.0:** The log(wild fish caught(million of tons)) over time, from 1950-2012. Graph is used to estimate the time period at which the logistic growth curve appears to follow linear growth, which is needed to estimate $k$"}
+ggplot(data = fish, aes(x = time, y = log(wild_catch))) + geom_point(color = "blue")+
+  theme_minimal()+
+labs(x = "Time (year)", y = "log(Wild Fish Caught)")
+  
+```
+
+
+### Finding the *k* estimate during exponential phase
 ```{r}
-vec_1 <- 1:63
+#exponential only up to about time = 40. Need to log transform the population of wild fish caught. doing this so we can estimate *k*, the logistic growth constant
 
-vec_1 %>% as.data.frame()
+fish_exp <- fish %>% 
+  filter(time <40) %>% 
+  mutate(wild_catch = log(wild_catch))
 
-fish["year_number"] <- vec_1
+
+fish_exp_lm <- lm(wild_catch ~ time, data = fish_exp)
+#fish_exp_lm
+```
+
+
+### Finding parameters using Nonlinear Least Squares
+```{r}
+fish_nls <- nls(wild_catch ~ K/(1 + A*exp(-r*time)),
+              data = fish,
+              start = list(K= 89, A =3.94, r = 0.04),
+              trace = TRUE)
+
+#summary(fish_nls)
+```
+
+### Making a Table with Model Outputs
+```{r}
+#using broom to clean up the model outputs into a table
+model_output <- broom::tidy(fish_nls)
+#model_output
+```
+
+Using NLS the model with estimated parameters the function is: $$P(t) = \frac{100.3}{1+4.32e^{-0.07t}}$$. The estimated parameters are also listed in Table 1.0 below.
+
+```{r}
+model_output %>% select(term, estimate) %>% 
+  gt %>% 
+  tab_header(
+    title = "Parameter Estimates for Wild Fish Caught over time",
+  ) %>% 
+  tab_footnote(
+    footnote = "Results of Nonlinear Least Squares Model",
+    locations = cells_title()
+  ) %>% 
+  fmt_number(
+    columns = vars(estimate),
+    decimals = 2
+  ) %>% 
+  tab_options(
+    table.width = pct(40)
+  ) %>% 
+  cols_label(
+    term = "Parameter",
+    estimate = "Estimated Value (million tons)"
+  )
+  
+```
+**Table 1.0:** parameter estimate results of the nonlinear least squares model of wild fish caught over time from 1950-2012.
+
+### Data Visualization of the model outputs compared to the original data
+
+```{r}
+#making predictions using the model
+fish_predict <- predict(fish_nls)
+
+#combining the predictions with the original data
+fish_complete <- data.frame(fish, fish_predict)
 
 ```
+
+```{r}
+#making the finalized data visualization
+ggplot(data = fish_complete, aes(x = time, y =wild_catch))+
+  geom_point(color = "blue")+
+  geom_line(aes(x = time, y = fish_predict), color = "green")+
+  theme_minimal()+
+  labs(x = "Time (years)", y= "Wild Fish Caught (million of tons)", title = "Wild Fish Caught over time Predicted catch versus \n actual catch (million of tons)")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
 
 
 Data Citation:
