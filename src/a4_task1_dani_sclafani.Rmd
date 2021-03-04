@@ -1,6 +1,8 @@
 ---
 title: "a4_task1_dani_sclafani"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -58,32 +60,35 @@ stream_tidy <- stream_data %>%
 
 ```
 
-### Part 1.0 Data Visualizations
 
+#### Creating a scaled version of the data
 ```{r}
-ggplot(data = stream_tidy, aes(x = nh4, y = no3))+ geom_point()+
-  labs(x = "Mean Concentration of NH4 (uM)", y = "Mean Concentration of NO3 (uM)")
-```
-```{r}
-#Second data visualizations
-ggplot(data = stream_tidy, aes(x = tdp, y = tss))+ geom_point()+
-  labs(x = "Mean Concentration of Total Dissolved Phosphorous (uM)", y = "Total Suspended Solids (per Liter)")
-```
-```{r}
-#3rd data visualizations
-ggplot(data = stream_tidy, aes(x = tss, y = spec))+ geom_point()+
-  labs(x = "Total Suspended Solids (per Liter)", y = "Specific Conductivity (per cm)")
-```
-
-#### need to get this to work but moving on for now
-```{r}
-#asking R how many clusters it thinks there should be
-
-cluster_est <- NbClust(stream_tidy[2:11], min.nc = 2, max.nc = 10, method = "kmeans")
+#keeping all measurements right now, but maybe i shouldn't? Maybe I only want to keep the measurements of interest
+stream_scaled <- stream_tidy %>% 
+  select(-site_code) %>% 
+  scale()
 ```
 
 
+#### Adding back in site_code as rownames 
+```{r}
+rownames(stream_scaled) <-stream_tidy$site_code
+```
 
+#### Finding the Euclidean Distance
+```{r}
+euc_distance <- dist(stream_scaled, method = "euclidean")
+
+view(euc_distance)
+```
+
+#### Performing hierarchical clustering by complete linkage and creating a dendrogram
+```{r, fig.cap= "Figure 1.0: Dendrogram of Stream Water Chemistry at 9 Sites"}
+#hierarchical clustering with complete linkage
+hc_complete <- hclust(euc_distance, method = "complete")
+
+plot(hc_complete, cex = 0.6, hang = -1) 
+```
 
 
 Data Citation: Santa Barbara Coastal LTER and J. Melack. 2019. SBC LTER: Land: Stream chemistry in the Santa Barbara Coastal drainage area, ongoing since 2000 ver 16. Environmental Data Initiative. https://doi.org/10.6073/pasta/67a558a24ceed9a0a5bf5e46ab841174. 
