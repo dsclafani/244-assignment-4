@@ -16,9 +16,11 @@ library(janitor)
 library(lubridate)
 library(broom)
 library(gt)
+library(ggiraph)
 ```
 
-### Reading in the Data
+
+#### Data Preparation
 ```{r}
 fish_data <- read_csv(here("data", "fish_catch.csv")) 
 
@@ -35,7 +37,7 @@ fish <- fish_data %>%
 ```
 
 
-### Setting up for Nonlinear least squares, need to add a column for time that makes 1950 = 0, and every year after that equal the corresponding number
+#### Setting up for Nonlinear least squares, need to add a column for time that makes 1950 = 0, and every year after that equal the corresponding number
 ```{r}
 #creating a vector for the numbers 0-62
 vec_1 <- 0:62
@@ -48,7 +50,7 @@ fish["time"] <- df_vec
 
 ```
 
-### Data Visualization, Wild Fish Caught over time
+#### Data Visualizations, Wild Fish Caught over time
 ```{r, fig.cap = "**Figure 1.0:** Wild Fish Caught over time from the year 1950 through 2012 globally"}
 ggplot(data = fish, aes(x = time, y = wild_catch)) + geom_line(color = "blue") +
   theme_minimal() +
@@ -66,7 +68,7 @@ labs(x = "Time (year)", y = "log(Wild Fish Caught)")
 ```
 
 
-### Finding the *k* estimate during exponential phase
+#### Finding the *k* estimate during exponential phase
 ```{r}
 #exponential only up to about time = 40. Need to log transform the population of wild fish caught. doing this so we can estimate *k*, the logistic growth constant
 
@@ -80,7 +82,7 @@ fish_exp_lm <- lm(wild_catch ~ time, data = fish_exp)
 ```
 
 
-### Finding parameters using Nonlinear Least Squares
+#### Finding parameters using Nonlinear Least Squares
 ```{r}
 fish_nls <- nls(wild_catch ~ K/(1 + A*exp(-r*time)),
               data = fish,
@@ -90,7 +92,7 @@ fish_nls <- nls(wild_catch ~ K/(1 + A*exp(-r*time)),
 #summary(fish_nls)
 ```
 
-### Making a Table with Model Outputs
+#### Making a Table with Model Outputs
 ```{r}
 #using broom to clean up the model outputs into a table
 model_output <- broom::tidy(fish_nls)
@@ -124,7 +126,7 @@ model_output %>% select(term, estimate) %>%
 ```
 **Table 1.0:** parameter estimate results of the nonlinear least squares model of wild fish caught over time from 1950-2012.
 
-### Data Visualization of the model outputs compared to the original data
+#### Data Visualization of the model outputs compared to the original data
 
 ```{r}
 #making predictions using the model
@@ -135,14 +137,33 @@ fish_complete <- data.frame(fish, fish_predict)
 
 ```
 
-```{r}
+```{r, fig.cap = "**Figure 3.0:** The actual amount of wild fish caught over time in million of tons is shown with the blue data points. The green line shows the predicted values for amount of wild fish caught based on the NonLinear Leat Squares model."}
+
 #making the finalized data visualization
 ggplot(data = fish_complete, aes(x = time, y =wild_catch))+
   geom_point(color = "blue")+
-  geom_line(aes(x = time, y = fish_predict), color = "green")+
+  geom_line(aes(x = time, y = fish_predict), color = "darkgreen")+
   theme_minimal()+
-  labs(x = "Time (years)", y= "Wild Fish Caught (million of tons)", title = "Wild Fish Caught over time Predicted catch versus \n actual catch (million of tons)")+
-  theme(plot.title = element_text(hjust = 0.5))
+  labs(x = "Time (years)", y= "Wild Fish Caught (million of tons)", title = "Wild Fish Caught Over Time",
+       subtitle = "Predicted catch versus actual catch (million of tons)") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))+
+  geom_label(
+    label = "Actual Data",
+    x = 58,
+    y = 26,
+    label.padding = unit(0.40, "lines"),
+    label.size = 0.15,
+    color = "blue"
+  )+
+  geom_label(
+    label = "NLS Model Predicted Values",
+    x = 52,
+    y = 18,
+    label.padding = unit(0.40, "lines"),
+    label.size = 0.10,
+    color = "darkgreen"
+  )
 ```
 
 
