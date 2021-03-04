@@ -36,13 +36,26 @@ fish <- fish_data %>%
 
 ### Data Visualization - Fish Over time
 
-```{r}
+```{r, fig.cap="Figure 1.0: The Amount of Wild Fish Caught between 1950-2012"}
 ggplot(data = fish, aes(x = year, y = wild_catch)) + geom_line(color = "blue") +
   theme_minimal() +
-  labs(x = "Year", y = "Number of Wild Fish Caught", title = "Wild Fish Caught Over Time (1950-2012)")+
+  labs(x = "Year", y = "Number of Wild Fish Caught (million of tons)", title = "Wild Fish Caught Over Time (1950-2012)")+
   theme(plot.title = element_text(hjust = 0.5))
 ```
+### need to work on this
+Part 2.b: In text below the exploratory graph: What type of relationship describes the trend? What does that look like mathematically (include an equation, possibly using LaTeX)? What are your initial estimates for the parameters in the model? 
 
+The graph above showing the amount of wild fish over time appears to follow a logistic trend, finding an asymptote around 89 million tons of wild fish. Using the graph to estimate parameters, the starting number of wild fish caught appears to be at around   18 million tons of fish.
+
+### to do Nonlinear least squares, need to add a column that makes 1950 = 1, and every year after that equal the corresponding number
+```{r}
+vec_1 <- 1:63
+
+vec_1 %>% as.data.frame()
+
+fish["year_number"] <- vec_1
+
+```
 
 
 Data Citation:
