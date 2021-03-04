@@ -1,0 +1,52 @@
+---
+title: "sclafani_dani_a4_task2"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+
+library(tidyverse)
+library(here)
+library(janitor)
+library(lubridate)
+```
+
+### Reading in the Data
+```{r}
+fish_data <- read_csv(here("data", "fish_catch.csv")) 
+
+fish <- fish_data %>% 
+  slice(5:67) %>% 
+  rename(year = "World Wild Fish Catch and Farmed Fish Production, 1950-2012",
+         wild_catch = X2,
+         farmed_fish = X3,
+         total_production = X4) %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(total_production = as.numeric(total_production)) %>% 
+  mutate(wild_catch = as.numeric(wild_catch)) %>% 
+ mutate(farmed_fish = as.numeric(farmed_fish))
+
+
+```
+
+### Data Visualization - Fish Over time
+
+```{r}
+ggplot(data = fish, aes(x = year, y = wild_catch)) + geom_line(color = "blue") +
+  theme_minimal() +
+  labs(x = "Year", y = "Number of Wild Fish Caught", title = "Wild Fish Caught Over Time (1950-2012)")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+Data Citation:
+Global wild fish catch and aquaculture production, compiled by Earth Policy Institute with 1950-2010 from U.N. Food and Agriculture Organization (FAO), Global Capture Production and Global Aquaculture Production, electronic databases, at www.fao.org/fishery/topic/16140/en.
+
+
+
