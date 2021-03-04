@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE,
 library(tidyverse)
 library(here)
 library(naniar)
+library(janitor)
 
 library(NbClust)
 library(cluster)
@@ -26,14 +27,61 @@ To perform hierarchical clustering by site, you’ll want to make a data frame t
 
 
 ```{r}
-#reading in the data
+#reading in the data and replacing -999.0 with NAs
 
-stream_data <- read.csv(here("data", "sbc_lter_registered_stream_chemistry.csv"))
-
-stream_data_tidy <- stream_data %>%
+stream_data <- read.csv(here("data", "sbc_lter_registered_stream_chemistry.csv"))%>%
   replace_with_na_all(condition = ~ .x == -999.0)
 
+stream_tidy <- stream_data %>% 
+  group_by(site_code) %>% 
+  summarize(mean(nh4_uM, na.rm = TRUE),
+            mean(no3_uM, na.rm = TRUE),
+            mean(po4_uM, na.rm = TRUE),
+            mean(tdn_uM, na.rm = TRUE),
+            mean(tdp_uM, na.rm = TRUE), 
+            mean(tpc_uM, na.rm = TRUE), 
+            mean(tpn_uM, na.rm = TRUE), 
+            mean(tpp_uM, na.rm = TRUE), 
+            mean(tss_mgperLiter, na.rm = TRUE),
+            mean(spec_cond_uSpercm, na.rm = TRUE)) %>% 
+  drop_na() %>% 
+  rename(nh4 = "mean(nh4_uM, na.rm = TRUE)") %>% 
+  rename(no3 = "mean(no3_uM, na.rm = TRUE)") %>% 
+  rename(po4 = "mean(po4_uM, na.rm = TRUE)") %>% 
+  rename(tdn = "mean(tdn_uM, na.rm = TRUE)") %>% 
+  rename(tdp = "mean(tdp_uM, na.rm = TRUE)") %>% 
+  rename(tpc = "mean(tpc_uM, na.rm = TRUE)") %>% 
+  rename(tpn = "mean(tpn_uM, na.rm = TRUE)") %>% 
+  rename(tpp = "mean(tpp_uM, na.rm = TRUE)") %>% 
+  rename(tss = "mean(tss_mgperLiter, na.rm = TRUE)") %>% 
+  rename(spec = "mean(spec_cond_uSpercm, na.rm = TRUE)") 
+
 ```
+
+### Part 1.0 Data Visualizations
+
+```{r}
+ggplot(data = stream_tidy, aes(x = nh4, y = no3))+ geom_point()+
+  labs(x = "Mean Concentration of NH4 (uM)", y = "Mean Concentration of NO3 (uM)")
+```
+```{r}
+#Second data visualizations
+ggplot(data = stream_tidy, aes(x = tdp, y = tss))+ geom_point()+
+  labs(x = "Mean Concentration of Total Dissolved Phosphorous (uM)", y = "Total Suspended Solids (per Liter)")
+```
+```{r}
+#3rd data visualizations
+ggplot(data = stream_tidy, aes(x = tss, y = spec))+ geom_point()+
+  labs(x = "Total Suspended Solids (per Liter)", y = "Specific Conductivity (per cm)")
+```
+
+#### need to get this to work but moving on for now
+```{r}
+#asking R how many clusters it thinks there should be
+
+cluster_est <- NbClust(stream_tidy[2:11], min.nc = 2, max.nc = 10, method = "kmeans")
+```
+
 
 
 
