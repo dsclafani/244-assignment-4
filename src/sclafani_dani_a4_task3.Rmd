@@ -4,5 +4,75 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message= FALSE)
+
+library(tidyverse)
+library(here)
+library(janitor)
+library(boot)
+library(gt)
+library(patchwork)
+library(broom)
+library(nlstools)
+
 ```
+
+### Data Wrangling
+```{r}
+#reading in the dataset I made from the ucsb pdf
+conduct_data <- read_csv(here("data", "conduct_data.csv")) %>% clean_names()
+
+#visualizing the data
+hist(conduct_data$number)
+mean(conduct_data$number)
+t.test(conduct_data$number)
+```
+
+### Bootstrapping the Sample to find a 95% confidence interval for the proportion of genderqueer individuals who experience exclusionary conduct based on UCSB's 2014 Campus Climate Survey
+```{r}
+# first need to find a formula that will calculate the proportion of each bootstrapped sample
+funct_proportion <- function(x,i) {mean(x[i])}
+
+#create a vector of conduct experiences
+conduct_vec <- conduct_data$number
+
+#10k bootstrap samples
+conduct_boot_10k <- boot(conduct_vec,
+                         statistic = funct_proportion,
+                         R = 10000)
+```
+
+
+
+
+### Plotting the Bootstrap samples
+```{r}
+#plot of the original data
+plot_og <- ggplot(data= conduct_data, aes(x=number)) + geom_histogram()
+
+#plotting the bootstrap samples, need to make bootstrap a data frame first
+conduct_boot_df <- data.frame(bs_proportion = conduct_boot_10k$t)
+
+ ggplot(data= conduct_boot_df, aes(x=bs_proportion)) + geom_histogram(fill = "purple", bins =32, color = "black")+
+   labs(x= "Proportion of Nonbinary Genderqueer Students \n who Experience Exclusionary Conduct", y = "Count of Bootstrap Samples",
+        title= "Proportions of UCSB Genderqueer/Nonbinary Students \nwho Experienced Exclusionary Conduct") +
+   theme_minimal()+
+   theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+### Finding the 95% confidence interval for nonbinrary/genderqueer UCSB Students who Experienced Exclusionary Conduct (2014)
+```{r}
+boot.ci(conduct_boot_10k, conf = 0.95)
+```
+
+We can expect that 95% of calculated confidence intervals calculated will contain the true proportion of UCSB nonbinrary/genderqueer students experienced exclusionary conduct according to the 2014 Campus Climate Report. 
+
+
+
+
+
+
+
