@@ -23,11 +23,11 @@ library(ggdendro)
 
 ## Task 1: Creating an Agglomerative Hierarchical Clustering
 
-For Task 1, use hierarchical clustering by complete linkage to create a dendrogram showing multivariate clustering for water chemistry by site,
+Hierarchical clustering by complete linkage to create a dendrogram showing multivariate clustering for water chemistry by site,
 
-To perform hierarchical clustering by site, you’ll want to make a data frame that has a single summary row per site (e.g. based on means from all observations at that site), then calculate the euclidean distance before performing complete linkage agglomerative hierarchical clustering. 
+To perform hierarchical clustering by site, first make a data frame that has a single summary row per site (e.g. based on means from all observations at that site), then calculate the euclidean distance before performing complete linkage agglomerative hierarchical clustering. 
 
-
+#### Data Wrangling
 ```{r}
 #reading in the data and replacing -999.0 with NAs
 
